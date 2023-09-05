@@ -1,177 +1,179 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package alphazero_u;
+package alphazero_u.controllers;
 
 import java.awt.*;
 import static java.awt.Label.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseListener;
 import java.util.*;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import javax.swing.*;
-import org.w3c.dom.events.*;
-import org.w3c.dom.views.*;
+import alphazero_u.models.Arbol;
+import alphazero_u.models.Casilla;
+import alphazero_u.models.Nodo;
+import alphazero_u.models.constants.ResourceImagesPath;
+import alphazero_u.models.interfaces.Escucha;
 
 /**
  *
  * @author ASUS-LGR23
  */
-public class Tablero extends javax.swing.JFrame {
+public class Tablero extends JFrame {
 
-    //atributos:
-    private Casilla tablero_logico[][] = new Casilla[6][6];
+    //atributos del juego
+    private static final int MAX = 1, SECONDS = 2, INF_MEN = (-1000 * 9999999);
     private Random aleatoreo = new Random();
+    private int numeroManzanas = 0;
+    private int manzanasBlancas = 0, manzanasNegras = 0;
+    private Casilla blanco, negro;
+
+    //Atributos para la logica del juego
+    private Arbol arbol_de_decision;
+    private Casilla tablero_logico[][] = new Casilla[6][6];
+
+    //Atributo para el manejo de eventos
+    private Escucha escucha = new EscuchaImpl();
+
+    //Atributos de los elementos graficos
     private JPanel panelTablero = new JPanel();
     private JPanel panelizq = new JPanel();
     private JPanel panelder = new JPanel();
-    public int numeroManzanas = 0;
     private Label etiquetaCPU, etiquetaJ1;
-    private Casilla blanco, negro;
-    public int manzanasBlancas = 0, manzanasNegras = 0;
-    public static final int MAX = 1, SECONDS = 2, INF_MEN = (-1000 * 9999999);
-    private Arbol arbol_de_decision;
 
-    //clase para manejar los escuchas:
-    private class Escucha implements MouseListener {
-
-        ArrayList<int[]> movimientos;
-
-        @Override
-        public void mouseClicked(java.awt.event.MouseEvent me) {
-            try {
-                //for para el evento de tocar a caballoBlanco y ver a donde se puede mover.
-                for (int i = 0; i < 6; i++) {
-                    for (int j = 0; j < 6; j++) {
-                        if ((me.getSource() == tablero_logico[i][j]) && (tablero_logico[i][j].getYosoy() == "caballoB") && (tablero_logico[i][j].getTurno() == true)) {
-                            movimientos = ValidarMovimientos_Tablero(MovimientosCaballos(tablero_logico[i][j]));
-                            blanco = tablero_logico[i][j];
-                            System.out.println("Estoy en: " + tablero_logico[i][j].getFila() + "," + tablero_logico[i][j].getColumna());
-                        }//cierra if
-                        else if ((me.getSource() == tablero_logico[i][j])) {
-                            for (int k = 0; k < movimientos.size(); k++) {
-                                if ((movimientos.get(k)[0] == i) && (movimientos.get(k)[1] == j)) {
-
-                                    System.out.println("Me movi a: " + i + "," + j);
-                                    Intercambiar(blanco, tablero_logico[i][j]);
-                                    blanco = null;
-                                    ReunirInformacion_Maquina();
-                                }
-                            }
-                        }//cierra if
-                        else {
-                            //System.out.println("No hace nada");
-                        }
-                    }//cierra for interno
-                }//cierra for externo
-            } catch (Exception e) {
-                System.err.println("Error en el escucha: " + e);
-            };
-        }//cerrar metodo mauseClicked.
-
-        //método para cambiar el caballo de posicion.
-        public void Intercambiar(Casilla cs1, Casilla cs2) {
-
-            //variable logica:
-            boolean esManzana = false;
-
-            try {
-                ///quita los bordes subrayados por que ya selecciono a donde ir.
-                for (int i = 0; i < 6; i++) {
-                    for (int j = 0; j < 6; j++) {
-                        tablero_logico[i][j].setBorder(null);
-                    }//cierra for interno
-                }//cierra for externo
-
-                //validar que a donde voy sea una manzana.
-                if (tablero_logico[cs2.getFila()][cs2.getColumna()].getYosoy() == "manzana") {
-                    esManzana = true;
-                }
-
-                //intercambia la posicion
-                tablero_logico[cs2.getFila()][cs2.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\caballo_blanco.gif"));//cambio el caballo de posicion.
-                tablero_logico[cs2.getFila()][cs2.getColumna()].setYosoy("caballoB");
-                tablero_logico[cs2.getFila()][cs2.getColumna()].setTurno(true);
-                blanco = tablero_logico[cs2.getFila()][cs2.getColumna()];
-
-                //pone el cuadro del tablero correspondiente.         
-                if ((cs1.getFila() % 2 == 0) || (cs1.getFila() == 0)) {
-                    if ((cs1.getColumna() % 2 == 0) || (cs1.getColumna() == 0)) {
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_claro.png"));
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setTurno(false);
-
-                    } else {
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_oscuro.png"));
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setTurno(false);
-                    }
-                }//cierra if
-                else {
-                    if ((cs1.getColumna() % 2 == 0) || (cs1.getColumna() == 0)) {
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_oscuro.png"));
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setTurno(false);
-                    } else {
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_claro.png"));
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
-                        tablero_logico[cs1.getFila()][cs1.getColumna()].setTurno(false);
-                    }//cierra else interno
-                }//cierra else externo
-
-                if (esManzana == true) {
-
-                    System.out.println("Me comi una manzana");
-                    IncrementarManzanasBlanco();
-                    Casilla c = new Casilla();
-                    c.setIcon(new ImageIcon("src\\Imagenes\\manzana.gif"));
-                    SumarAlTablero(c);
-
-                }
-
-            } catch (Exception ex) {
-                System.err.println("Error en el metodo Intercambio" + ex);
-            };
-        }//cierra el metodo
-
-        //método para sumarle las manzanas a los tableros.
-        public void SumarAlTablero(Casilla manzana) {
-            panelder.add(manzana, CENTER);
-            RestarManzanas();
-        }
-
-        @Override
-        public void mousePressed(java.awt.event.MouseEvent me) {
-            //   throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
-        public void mouseReleased(java.awt.event.MouseEvent me) {
-            // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent me) {
-            //    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent me) {
-            //  throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-    }
-    private Escucha escucha = new Escucha();
-
-    //metodos://////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Tablero() {
-        initComponents();
-        this.setTitle("ALPHA ZERO UNIVALLE");
-        ConstruirTablero();
-        System.out.println("voy a jugar con:" + numeroManzanas + " Manzanas");
+        this.setTitle("ARBOLES DE DECISÓN - Capturar Manzanas");
+        makeLeftPanel();
+        makeTable();
+        makeRigthPanel();
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        getContentPane().setLayout(new java.awt.GridLayout());
+        pack();
+    }
+
+    //Methos Getter and Setters
+    public static int getMax() {
+        return MAX;
+    }
+
+    public static int getSeconds() {
+        return SECONDS;
+    }
+
+    public static int getInfMen() {
+        return INF_MEN;
+    }
+
+    public Random getAleatoreo() {
+        return aleatoreo;
+    }
+
+    public void setAleatoreo(Random aleatoreo) {
+        this.aleatoreo = aleatoreo;
+    }
+
+    public int getNumeroManzanas() {
+        return numeroManzanas;
+    }
+
+    public void setNumeroManzanas(int numeroManzanas) {
+        this.numeroManzanas = numeroManzanas;
+    }
+
+    public int getManzanasBlancas() {
+        return manzanasBlancas;
+    }
+
+    public void setManzanasBlancas(int manzanasBlancas) {
+        this.manzanasBlancas = manzanasBlancas;
+    }
+
+    public int getManzanasNegras() {
+        return manzanasNegras;
+    }
+
+    public void setManzanasNegras(int manzanasNegras) {
+        this.manzanasNegras = manzanasNegras;
+    }
+
+    public Casilla getBlanco() {
+        return blanco;
+    }
+
+    public void setBlanco(Casilla blanco) {
+        this.blanco = blanco;
+    }
+
+    public Casilla getNegro() {
+        return negro;
+    }
+
+    public void setNegro(Casilla negro) {
+        this.negro = negro;
+    }
+
+    public Arbol getArbol_de_decision() {
+        return arbol_de_decision;
+    }
+
+    public void setArbol_de_decision(Arbol arbol_de_decision) {
+        this.arbol_de_decision = arbol_de_decision;
+    }
+
+    public Casilla[][] getTablero_logico() {
+        return tablero_logico;
+    }
+
+    public void setTablero_logico(Casilla[][] tablero_logico) {
+        this.tablero_logico = tablero_logico;
+    }
+
+    public Escucha getEscucha() {
+        return escucha;
+    }
+
+    public void setEscucha(Escucha escucha) {
+        this.escucha = escucha;
+    }
+
+    public JPanel getPanelTablero() {
+        return panelTablero;
+    }
+
+    public void setPanelTablero(JPanel panelTablero) {
+        this.panelTablero = panelTablero;
+    }
+
+    public JPanel getPanelizq() {
+        return panelizq;
+    }
+
+    public void setPanelizq(JPanel panelizq) {
+        this.panelizq = panelizq;
+    }
+
+    public JPanel getPanelder() {
+        return panelder;
+    }
+
+    public void setPanelder(JPanel panelder) {
+        this.panelder = panelder;
+    }
+
+    public Label getEtiquetaCPU() {
+        return etiquetaCPU;
+    }
+
+    public void setEtiquetaCPU(Label etiquetaCPU) {
+        this.etiquetaCPU = etiquetaCPU;
+    }
+
+    public Label getEtiquetaJ1() {
+        return etiquetaJ1;
+    }
+
+    public void setEtiquetaJ1(Label etiquetaJ1) {
+        this.etiquetaJ1 = etiquetaJ1;
+    }
+
+    //Methods to make the view.
+     private void makeLeftPanel(){
         panelizq.setLayout(new GridLayout(numeroManzanas + 1, 1));
         panelizq.setBackground(Color.BLACK);
         panelizq.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -180,7 +182,9 @@ public class Tablero extends javax.swing.JFrame {
         this.etiquetaCPU.setForeground(Color.WHITE);
         panelizq.add(this.etiquetaCPU);
         this.add(panelizq);
-        this.add(panelTablero);
+    }
+    
+    private void makeRigthPanel(){
         panelder.setLayout(new GridLayout(numeroManzanas + 1, 1));
         panelder.setBackground(Color.WHITE);
         panelder.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -189,75 +193,46 @@ public class Tablero extends javax.swing.JFrame {
         this.etiquetaJ1.setForeground(Color.BLACK);
         panelder.add(this.etiquetaJ1);
         this.add(panelder);
-    }//cierra constructor
+    }
 
-    //metrodo que me construye la interfaz.
-    public void ConstruirTablero() {
+    private void makeTable() {
         this.panelTablero.setLayout(new GridLayout(6, 6));
         this.panelTablero.setSize(500, 500);
-
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                Casilla casilla = new Casilla();
-                if ((i % 2 == 0) || (i == 0)) {
-                    if ((j % 2 == 0) || (j == 0)) {
-                        casilla.setIcon(new ImageIcon("src\\Imagenes\\cuadro_claro.png"));
-                        casilla.setFila(i);
-                        casilla.setColumna(j);
-                        casilla.addMouseListener(escucha);
-                        casilla.setYosoy("casilla");
-                        this.tablero_logico[i][j] = casilla;
-
-                    } else {
-                        casilla.setIcon(new ImageIcon("src\\Imagenes\\cuadro_oscuro.png"));
-                        casilla.setFila(i);
-                        casilla.setColumna(j);
-                        casilla.addMouseListener(escucha);
-                        casilla.setYosoy("casilla");
-                        this.tablero_logico[i][j] = casilla;
-
-                    }
-                }//cierra if
-                else {
-                    if ((j % 2 == 0) || (j == 0)) {
-                        casilla.setIcon(new ImageIcon("src\\Imagenes\\cuadro_oscuro.png"));
-                        casilla.setFila(i);
-                        casilla.setColumna(j);
-                        casilla.addMouseListener(escucha);
-                        casilla.setYosoy("casilla");
-                        this.tablero_logico[i][j] = casilla;
-
-                    } else {
-                        casilla.setIcon(new ImageIcon("src\\Imagenes\\cuadro_claro.png"));
-                        casilla.setFila(i);
-                        casilla.setColumna(j);
-                        casilla.addMouseListener(escucha);
-                        casilla.setYosoy("casilla");
-                        this.tablero_logico[i][j] = casilla;
-
-                    }//cierra else interno
-                }//cierra else externo
-            }//cierra for interno  
-        }//cierra for externo
-
+        this.fullFilledTableSquares();
         for (int x = 0; x < 6; x++) {
             for (int y = 0; y < 6; y++) {
                 this.panelTablero.add(tablero_logico[x][y]);
             }
-        }//cierra for externo
+        }
+        this.indexElements();
+        this.panelder.setSize(500, 500);
+        this.panelizq.setSize(500, 500);
+        this.setSize(1500, 580);
+        this.add(panelTablero);
+    }
 
-        //poner los caballos
-        int filaCB = aleatoreo.nextInt(6);
-        int columnaCB = aleatoreo.nextInt(6);
-        int filaCN = aleatoreo.nextInt(6);
-        int columnaCN = aleatoreo.nextInt(6);
-        tablero_logico[filaCN][columnaCN].setIcon(new ImageIcon("src\\Imagenes\\Caballo_negro.gif"));
-        tablero_logico[filaCN][columnaCN].setYosoy("caballoN");
-        tablero_logico[filaCB][columnaCB].setIcon(new ImageIcon("src\\Imagenes\\caballo_blanco.gif"));
-        tablero_logico[filaCB][columnaCB].setYosoy("caballoB");
-        tablero_logico[filaCB][columnaCB].setTurno(true);
-        //poner manzanas
-        int respuesta = Integer.parseInt(JOptionPane.showInputDialog("Con cuantas manzanas desea jugar: (3) (5) (7)"));
+    private void indexElements(){
+        Map<String, Integer> positions = this.indexHourses();
+        this.indexApples(Integer.parseInt(JOptionPane.showInputDialog(
+            "Con cuantas manzanas desea jugar: (3) (5) (7)")));
+    }
+
+    private Map<String, Integer> indexHourses() {
+        Map <String, Integer> mapositionsp = new HashMap<>();
+        mapositionsp.put("filaCB", aleatoreo.nextInt(6));
+        mapositionsp.put("columnaCB", aleatoreo.nextInt(6));
+        mapositionsp.put("filaCN", aleatoreo.nextInt(6));
+        final String CABALLON = "caballoN";
+        final String CABALLOB = "caballoB";
+        tablero_logico[map.get("filaCN")][map.get("columnaCN")].setIcon(new ImageIcon(ResourceImagesPath.DARK_HORSE.getPath()));
+        tablero_logico[map.get("filaCN")][map.get("columnaCN")].setYosoy(CABALLON);
+        tablero_logico[map.get("filaCB")][map.get("columnaCB")].setIcon(new ImageIcon(ResourceImagesPath.LIGHT_HORSE.getPath()));
+        tablero_logico[map.get("filaCB")][map.get("columnaCB")].setYosoy(CABALLOB);
+        tablero_logico[map.get("filaCB")][map.get("columnaCB")].setTurno(true);
+        return mapositionsp;
+    }
+
+    private void indexApples(int respuesta){
         if (respuesta <= 1) {
             respuesta = 1;
         }
@@ -287,7 +262,7 @@ public class Tablero extends javax.swing.JFrame {
                     columna = aleatoreo.nextInt(6);
 
                 }
-                tablero_logico[fila][columna].setIcon(new ImageIcon("src\\Imagenes\\manzana.gif"));
+                tablero_logico[fila][columna].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\manzana.gif"));
                 tablero_logico[fila][columna].setYosoy("manzana");
                 filaAnt = fila;
                 columnaAnt = columna;
@@ -306,7 +281,7 @@ public class Tablero extends javax.swing.JFrame {
                     columna = aleatoreo.nextInt(6);
 
                 }
-                tablero_logico[fila][columna].setIcon(new ImageIcon("src\\Imagenes\\manzana.gif"));
+                tablero_logico[fila][columna].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\manzana.gif"));
                 tablero_logico[fila][columna].setYosoy("manzana");
                 filaAnt = fila;
                 columnaAnt = columna;
@@ -325,18 +300,65 @@ public class Tablero extends javax.swing.JFrame {
                     columna = aleatoreo.nextInt(6);
 
                 }
-                tablero_logico[fila][columna].setIcon(new ImageIcon("src\\Imagenes\\manzana.gif"));
+                tablero_logico[fila][columna].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\manzana.gif"));
                 tablero_logico[fila][columna].setYosoy("manzana");
                 filaAnt = fila;
                 columnaAnt = columna;
             }//cierra for
         }
-
-        this.panelder.setSize(500, 500);
-        this.panelizq.setSize(500, 500);
-        this.setSize(1500, 580);
-        //ReunirInformacion_Maquina();
     }
+
+    private void fullFilledTableSquares(){
+        final String CASILLA = "casilla";
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 6; j++) {
+                Casilla casilla = new Casilla();
+                if ((i % 2 == 0) || (i == 0)) {
+                    if ((j % 2 == 0) || (j == 0)) {
+                        casilla.setIcon(new ImageIcon(ResourceImagesPath.LIGHT_SQUARE.getPath()));
+                        casilla.setFila(i);
+                        casilla.setColumna(j);
+                        casilla.addMouseListener(escucha);
+                        casilla.setYosoy(CASILLA);
+                        this.tablero_logico[i][j] = casilla;
+
+                    } else {
+                        casilla.setIcon(new ImageIcon(ResourceImagesPath.DARK_SQUARE.getPath()));
+                        casilla.setFila(i);
+                        casilla.setColumna(j);
+                        casilla.addMouseListener(escucha);
+                        casilla.setYosoy(CASILLA);
+                        this.tablero_logico[i][j] = casilla;
+                    }
+                }
+                else {
+                    if ((j % 2 == 0) || (j == 0)) {
+                        casilla.setIcon(new ImageIcon(ResourceImagesPath.DARK_SQUARE.getPath()));
+                        casilla.setFila(i);
+                        casilla.setColumna(j);
+                        casilla.addMouseListener(escucha);
+                        casilla.setYosoy("casilla");
+                        this.tablero_logico[i][j] = casilla;
+                    } else {
+                        casilla.setIcon(new ImageIcon(ResourceImagesPath.LIGHT_SQUARE.getPath()));
+                        casilla.setFila(i);
+                        casilla.setColumna(j);
+                        casilla.addMouseListener(escucha);
+                        casilla.setYosoy("casilla");
+                        this.tablero_logico[i][j] = casilla;
+                    }
+                }
+            }  
+        }
+    }
+
+    
+
+
+
+  
+
+
 
     //método para quitar las manzanas que se comieron ya.
     public void RestarManzanas() {
@@ -469,26 +491,26 @@ public class Tablero extends javax.swing.JFrame {
             }
 
             //intercambia la posicion
-            tablero_logico[cs2.getFila()][cs2.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\caballo_negro.gif"));//cambio el caballo de posicion.
+            tablero_logico[cs2.getFila()][cs2.getColumna()].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\caballo_negro.gif"));//cambio el caballo de posicion.
             tablero_logico[cs2.getFila()][cs2.getColumna()].setYosoy("caballoN");
             blanco = tablero_logico[cs2.getFila()][cs2.getColumna()];
 
             //pone el cuadro del tablero correspondiente.         
             if ((cs1.getFila() % 2 == 0) || (cs1.getFila() == 0)) {
                 if ((cs1.getColumna() % 2 == 0) || (cs1.getColumna() == 0)) {
-                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_claro.png"));
+                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\cuadro_claro.png"));
                     tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
                 } else {
-                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_oscuro.png"));
+                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\cuadro_oscuro.png"));
                     tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
                 }
             }//cierra if
             else {
                 if ((cs1.getColumna() % 2 == 0) || (cs1.getColumna() == 0)) {
-                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_oscuro.png"));
+                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\cuadro_oscuro.png"));
                     tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
                 } else {
-                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("src\\Imagenes\\cuadro_claro.png"));
+                    tablero_logico[cs1.getFila()][cs1.getColumna()].setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\cuadro_claro.png"));
                     tablero_logico[cs1.getFila()][cs1.getColumna()].setYosoy("casilla");
                 }//cierra else interno
             }//cierra else externo
@@ -498,7 +520,7 @@ public class Tablero extends javax.swing.JFrame {
                 System.out.println("Me comi una manzana");
                 IncrementarManzanasNegro();
                 Casilla c = new Casilla();
-                c.setIcon(new ImageIcon("src\\Imagenes\\manzana.gif"));
+                c.setIcon(new ImageIcon("juego-Alpha-zero\\Imagenes\\manzana.gif"));
                 SumarAlTableroCaballoNegro(c);
 
             }
@@ -596,47 +618,5 @@ public class Tablero extends javax.swing.JFrame {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        getContentPane().setLayout(new java.awt.GridLayout());
-
-        pack();
-    }// </editor-fold>//GEN-END:initComponents
-
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Tablero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(Tablero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(Tablero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Tablero.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new Tablero().setVisible(true);
-            }
-        });
-    }
-
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    // End of variables declaration//GEN-END:variables
+    
 }
